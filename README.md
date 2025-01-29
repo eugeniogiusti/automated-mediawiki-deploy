@@ -22,7 +22,7 @@ This script automates the installation process of MediaWiki on Ubuntu/Debian sys
 
 1. Download the installation script:
 ```bash
-wget https://github.com/eugeniogiusti/automated-mediawiki-deploy.git
+git clone https://github.com/eugeniogiusti/automated-mediawiki-deploy.git
 cd automated-mediawiki-deploy.git
 ```
 
