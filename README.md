@@ -28,7 +28,6 @@ cd automated-mediawiki-deploy
 
 2. Make the script executable:
 ```bash
-sudo su
 chmod +x install_mediawiki.sh
 ```
 
