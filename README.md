@@ -1,158 +1,115 @@
-# MediaWiki Automated Installation Script
+#!/bin/bash
 
-This script automates the installation process of MediaWiki on Ubuntu/Debian systems. It handles the complete setup of Apache, MySQL, PHP, and MediaWiki with secure defaults.
+# Update the system
+sudo apt update && sudo apt upgrade -y
 
-## Prerequisites
+# Install Apache
+sudo apt install -y apache2
 
-- Tested on Ubuntu 22.04
-- VM with 2 virtual cpu 2gb RAM and 40gb storage
-- Root or sudo privileges
-- Internet connection to update the machine and download the necessary packages
+# Install MariaDB
+sudo apt install -y mariadb-server mariadb-client
 
-## Features
+# Install PHP 8.1 and required extensions from Ubuntu 22.04 default repositories
+sudo apt install -y php8.1 \
+    php8.1-cli \
+    php8.1-common \
+    php8.1-mysql \
+    php8.1-xml \
+    php8.1-mbstring \
+    php8.1-intl \
+    php8.1-curl \
+    php8.1-zip \
+    libapache2-mod-php8.1
 
-- Automated installation of all required packages
-- Secure MySQL setup
-- Automatic database creation with random secure password
-- Apache configuration with optimal settings
-- PHP configuration for MediaWiki
-- Complete MediaWiki installation
+# Secure MariaDB installation
+sudo mysql_secure_installation
 
-## Installation
+# Create a database and user for MediaWiki
+DB_NAME="mediawiki"
+DB_USER="mediawiki_user"
+DB_PASS=$(openssl rand -base64 12)
 
-1. Download the installation script:
-```bash
-git clone https://github.com/eugeniogiusti/automated-mediawiki-deploy.git
-cd automated-mediawiki-deploy
-```
+# Log into MariaDB and execute commands to create the database and user
+sudo mariadb -e "CREATE DATABASE ${DB_NAME};"
+sudo mariadb -e "CREATE USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';"
+sudo mariadb -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
+sudo mariadb -e "FLUSH PRIVILEGES;"
 
-2. Make the script executable:
-```bash
-chmod +x install_mediawiki.sh
-```
+# Download and install MediaWiki
+MEDIAWIKI_VERSION="1.39.3"
+MEDIAWIKI_URL="https://releases.wikimedia.org/mediawiki/${MEDIAWIKI_VERSION%.*}/mediawiki-${MEDIAWIKI_VERSION}.tar.gz"
 
-3. Run the script:
-```bash
-sudo ./install_mediawiki.sh
-```
+# Download MediaWiki tarball
+cd /tmp
+wget ${MEDIAWIKI_URL}
 
-## What the Script Does
+# Extract the tarball and move it to the web directory
+tar -xvzf mediawiki-${MEDIAWIKI_VERSION}.tar.gz
+sudo mv mediawiki-${MEDIAWIKI_VERSION} /var/www/html/mediawiki
 
-### 1. System Update
-- Updates package list
-- Upgrades installed packages
+# Set proper permissions for the MediaWiki directory
+sudo chown -R www-data:www-data /var/www/html/mediawiki
+sudo chmod -R 755 /var/www/html/mediawiki
 
-### 2. Package Installation
-Installs the following packages:
-- Apache2
-- MySQL Server
-- PHP and required extensions:
-  - libapache2-mod-php
-  - php-mysql
-  - php-xml
-  - php-mbstring
-  - php-intl
-  - php-curl
-  - php-json
-  - php-zip
+# Configure Apache for MediaWiki
+sudo tee /etc/apache2/sites-available/mediawiki.conf > /dev/null <<EOL
+<VirtualHost *:80>
+    ServerName wiki.localhost
+    DocumentRoot /var/www/html/mediawiki
+    <Directory /var/www/html/mediawiki/>
+        Options FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    ErrorLog \${APACHE_LOG_DIR}/mediawiki_error.log
+    CustomLog \${APACHE_LOG_DIR}/mediawiki_access.log combined
+</VirtualHost>
+EOL
 
-### 3. Database Setup
-- Creates a MediaWiki database
-- Creates a dedicated MySQL user
-- Generates a secure random password
-- Sets appropriate database permissions
+# Enable the MediaWiki site and disable the default Apache site
+sudo a2ensite mediawiki.conf
+sudo a2dissite 000-default.conf
 
-### 4. MediaWiki Installation
-- Downloads MediaWiki version 1.39.3
-- Extracts files to Apache web directory
-- Sets proper file permissions
-- Configures Apache virtual host
+# Enable Apache's rewrite module for clean URLs
+sudo a2enmod rewrite
 
-### 5. Server Configuration
-- Enables Apache rewrite module
-- Configures PHP settings for optimal MediaWiki performance
-- Increases upload file size limits to 20MB
+# Configure PHP settings for MediaWiki
+sudo tee -a /etc/php/8.1/apache2/php.ini > /dev/null <<EOL
 
-## Post-Installation
+; MediaWiki recommended settings
+upload_max_filesize = 20M
+post_max_size = 20M
+memory_limit = 128M
+max_execution_time = 200
+EOL
 
-After the script completes, you will see:
-- The URL to access your MediaWiki installation
-- Database credentials (save these securely!)
-- Instructions for completing web-based setup
+# Restart Apache to apply all changes
+sudo systemctl restart apache2
 
-Important: Complete the web-based setup by visiting:
-```
-http://YOUR_SERVER_IP/mediawiki
-```
+# Add entry to hosts file
+sudo sed -i '/wiki.localhost/d' /etc/hosts
+echo "127.0.0.1 wiki.localhost" | sudo tee -a /etc/hosts
 
-## Database Credentials
+# Create a backup directory
+sudo mkdir -p /var/www/html/mediawiki/backups
+sudo chown -R www-data:www-data /var/www/html/mediawiki/backups
 
-The script will display the following credentials at the end of installation:
-- Database Name: mediawiki
-- Database User: mediawiki_user
-- Database Password: [automatically generated]
-
-⚠️ **IMPORTANT**: Save these credentials immediately as they are required for the web-based setup!
-
-## Security Considerations
-
-1. The script generates a random database password using OpenSSL
-2. Apache is configured with secure defaults
-3. MySQL secure installation is automated
-4. File permissions are set according to security best practices
-
-## Customization
-
-You can modify the following variables in the script:
-- `MEDIAWIKI_VERSION`: Change the MediaWiki version
-- `DB_NAME`: Change the database name
-- `DB_USER`: Change the database username
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Permission Denied**
-   ```bash
-   sudo chmod +x install_mediawiki.sh
-   ```
-
-2. **MySQL Connection Issues**
-   - Check MySQL service status:
-   ```bash
-   sudo systemctl status mysql
-   ```
-
-3. **Apache Not Starting**
-   - Check Apache error logs:
-   ```bash
-   sudo tail -f /var/log/apache2/error.log
-   ```
-
-### Log Files
-
-Important log locations:
-- Apache: `/var/log/apache2/error.log`
-- MySQL: `/var/log/mysql/error.log`
-- PHP: `/var/log/apache2/error.log`
-
-## Maintenance
-
-### Backup Database
-```bash
-mysqldump -u [DB_USER] -p [DB_NAME] > backup.sql
-```
-
-### Update MediaWiki
-The script installs MediaWiki 1.39.3. For updates:
-1. Backup your database and files
-2. Change `MEDIAWIKI_VERSION` in the script
-3. Run the update script from MediaWiki's web interface
-
-## Contributing
-
-Feel free to submit issues and enhancement requests!
-
-## License
-
-This script is licensed under the GPL license - see the LICENSE file for details.
+# Display final instructions
+echo "============================================"
+echo "MediaWiki Installation Complete!"
+echo "============================================"
+echo "Access your wiki at: http://wiki.localhost"
+echo ""
+echo "Database Information:"
+echo "Database Name: ${DB_NAME}"
+echo "Database User: ${DB_USER}"
+echo "Database Password: ${DB_PASS}"
+echo ""
+echo "Important Next Steps:"
+echo "1. Visit http://wiki.localhost in your browser"
+echo "2. Follow the MediaWiki setup wizard"
+echo "3. Use the database credentials above during setup"
+echo "4. Save the LocalSettings.php file to /var/www/html/mediawiki/"
+echo ""
+echo "Save these credentials in a secure location!"
+echo "============================================"
