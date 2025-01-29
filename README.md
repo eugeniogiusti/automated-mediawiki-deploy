@@ -22,7 +22,8 @@ This script automates the installation process of MediaWiki on Ubuntu/Debian sys
 
 1. Download the installation script:
 ```bash
-wget https://raw.githubusercontent.com/yourusername/mediawiki-installer/main/install_mediawiki.sh
+wget https://github.com/eugeniogiusti/automated-mediawiki-deploy.git
+cd automated-mediawiki-deploy.git
 ```
 
 2. Make the script executable:
@@ -154,16 +155,4 @@ Feel free to submit issues and enhancement requests!
 
 ## License
 
-This script is licensed under the MIT License - see the LICENSE file for details.
-
-## Author
-
-[Your Name]
-[Your Contact Information]
-
-## Version History
-
-- 1.0.0
-    - Initial Release
-    - Basic installation automation
-    - Security configurations
+This script is licensed under the GPL license - see the LICENSE file for details.
