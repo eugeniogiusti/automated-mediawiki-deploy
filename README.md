@@ -4,10 +4,10 @@ This script automates the installation process of MediaWiki on Ubuntu/Debian sys
 
 ## Prerequisites
 
-- Ubuntu/Debian-based system
+- Tested on Ubuntu 22.04
+- VM with 2 virtual cpu 2gb RAM and 40gb storage
 - Root or sudo privileges
-- Internet connection
-- Basic knowledge of Linux command line
+- Internet connection to update the machine and download the necessary packages
 
 ## Features
 
