@@ -25,7 +25,7 @@ This bash script automates the installation and initial configuration of MediaWi
 
 1. Download the installation script:
 ```bash
-wget https://raw.githubusercontent.com/yourusername/mediawiki-installer/main/install_mediawiki.sh
+git clone https://raw.githubusercontent.com/yourusername/mediawiki-installer/main/install_mediawiki.sh
 ```
 
 2. Make the script executable:
