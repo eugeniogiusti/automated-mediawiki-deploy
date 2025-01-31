@@ -8,7 +8,6 @@ This bash script automates the installation and initial configuration of MediaWi
 - MariaDB database creation and secure configuration
 - Apache virtual host configuration
 - PHP optimization for MediaWiki
-- Automatic security settings
 - Local development environment setup
 - Backup directory creation
 - Detailed post-installation instructions
@@ -18,14 +17,15 @@ This bash script automates the installation and initial configuration of MediaWi
 - Ubuntu 22.04 LTS
 - Root or sudo privileges
 - Internet connection
-- At least 1GB of free disk space
-- Basic knowledge of server administration
+- VM with dual core virtual cpu
+- 2GB ram
+- 20 gb of storage
 
 ## Installation
 
 1. Download the installation script:
 ```bash
-git clone https://raw.githubusercontent.com/yourusername/mediawiki-installer/main/install_mediawiki.sh
+git clone https://github.com/eugeniogiusti/automated-mediawiki-deploy/
 ```
 
 2. Make the script executable:
@@ -44,14 +44,13 @@ sudo ./install_mediawiki.sh
 2. Installs Apache web server
 3. Installs MariaDB database server
 4. Installs PHP 8.1 and required extensions
-5. Secures the MariaDB installation
-6. Creates a database and user for MediaWiki
-7. Downloads and installs MediaWiki 1.39.3
-8. Configures Apache virtual host
-9. Sets up proper file permissions
-10. Configures PHP settings for optimal performance
-11. Creates a backup directory
-12. Adds local domain to hosts file
+5. Creates a database and user for MediaWiki
+6. Downloads and installs MediaWiki 1.39.3
+7. Configures Apache virtual host
+8. Sets up proper file permissions
+9. Configures PHP settings for optimal performance
+10. Creates a backup directory
+11. Adds local domain to hosts file
 
 ## Post-Installation
 
@@ -65,7 +64,6 @@ After the script completes, you will need to:
 ## Security Considerations
 
 - The script generates a random database password
-- MariaDB is secured using mysql_secure_installation
 - Appropriate file permissions are set
 - Apache is configured with secure defaults
 
@@ -103,19 +101,3 @@ The script creates a backup directory at `/var/www/html/mediawiki/backups`. It's
 - Regularly backup your database
 - Keep copies of your LocalSettings.php
 - Backup any uploaded files
-
-## Contributing
-
-Feel free to submit issues and enhancement requests!
-
-## License
-
-This script is released under the MIT License. See the LICENSE file for details.
-
-## Support
-
-For support, please open an issue in the GitHub repository or consult the [MediaWiki documentation](https://www.mediawiki.org/wiki/Documentation).
-
-## Disclaimer
-
-This script is provided as-is without any warranty. Always test in a development environment before using in production.
