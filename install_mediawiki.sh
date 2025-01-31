@@ -21,9 +21,6 @@ sudo apt install -y php8.1 \
     php8.1-zip \
     libapache2-mod-php8.1
 
-# Secure MariaDB installation
-sudo mysql_secure_installation
-
 # Create a database and user for MediaWiki
 DB_NAME="mediawiki"
 DB_USER="mediawiki_user"
