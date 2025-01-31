@@ -5,7 +5,7 @@ This bash script automates the installation and initial configuration of MediaWi
 ## Features
 
 - Automatic installation of all required dependencies
-- MariaDB database creation and secure configuration
+- MariaDB database creation
 - Apache virtual host configuration
 - PHP optimization for MediaWiki
 - Local development environment setup
