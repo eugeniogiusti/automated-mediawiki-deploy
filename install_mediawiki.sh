@@ -21,6 +21,16 @@ sudo apt install -y php8.1 \
     php8.1-zip \
     libapache2-mod-php8.1
 
+# Securely configure Maria db
+mysql -e "UPDATE mysql.user SET plugin='mysql_native_password' WHERE User='root';"
+mysql_secure_installation <<EOF
+n
+y
+N
+y
+y
+EOF
+
 # Create a database and user for MediaWiki
 DB_NAME="mediawiki"
 DB_USER="mediawiki_user"
