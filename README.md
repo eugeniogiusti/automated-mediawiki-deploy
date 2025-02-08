@@ -56,7 +56,7 @@ sudo ./install_mediawiki.sh
 
 After the script completes, you will need to:
 
-1. Visit http://wiki.localhost in your web browser
+1. Visit http://your_local_ip in your web browser
 2. Complete the MediaWiki web-based configuration
 3. Use the database credentials displayed at the end of the installation
 4. Download and place the generated LocalSettings.php file in /var/www/html/mediawiki/
