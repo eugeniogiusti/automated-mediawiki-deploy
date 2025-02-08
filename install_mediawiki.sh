@@ -105,7 +105,7 @@ sudo chown -R www-data:www-data /var/www/html/mediawiki/backups
 echo "============================================"
 echo "MediaWiki Installation Complete!"
 echo "============================================"
-echo "Access your wiki at: http://wiki.localhost"
+echo "Access your wiki at: http://your_server_ip"
 echo ""
 echo "Database Information:"
 echo "Database Name: ${DB_NAME}"
