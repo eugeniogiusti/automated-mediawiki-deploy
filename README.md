@@ -52,7 +52,7 @@ sudo ./install_mediawiki.sh
 10. Creates a backup directory
 11. Adds local domain to hosts file
 
-## Post-Installation
+## Post Installation
 
 After the script completes, you will need to:
 
