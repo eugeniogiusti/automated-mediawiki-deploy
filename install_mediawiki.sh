@@ -1,64 +1,107 @@
 #!/bin/bash
+set -euo pipefail
 
-# Update the system
+# Logging function
+log() {
+  echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*"
+}
+
+# Function to check if a service is active; if not, try to start it
+check_service() {
+  local service_name=$1
+  if systemctl is-active --quiet "$service_name"; then
+    log "The service '$service_name' is active."
+  else
+    log "The service '$service_name' is not active. Attempting to start it..."
+    sudo systemctl start "$service_name"
+    sleep 2
+    if systemctl is-active --quiet "$service_name"; then
+      log "The service '$service_name' has started successfully."
+    else
+      log "Unable to start the service '$service_name'. Exiting."
+      exit 1
+    fi
+  fi
+}
+
+log "Updating the system..."
 sudo apt update && sudo apt upgrade -y
 
-# Install Apache
+# Installing Apache
+log "Installing Apache..."
 sudo apt install -y apache2
 
-# Install MariaDB
+# Installing MariaDB
+log "Installing MariaDB..."
 sudo apt install -y mariadb-server mariadb-client
 
-# Install PHP 8.1 and required extensions from Ubuntu 22.04 default repositories
-sudo apt install -y php8.1 \
-    php8.1-cli \
-    php8.1-common \
-    php8.1-mysql \
-    php8.1-xml \
-    php8.1-mbstring \
-    php8.1-intl \
-    php8.1-curl \
-    php8.1-zip \
-    libapache2-mod-php8.1
+# Starting and enabling the MariaDB service
+log "Starting and enabling MariaDB..."
+sudo systemctl start mariadb
+sudo systemctl enable mariadb
+check_service "mariadb"
 
-# Securely configure Maria db
-mysql -e "UPDATE mysql.user SET plugin='mysql_native_password' WHERE User='root';"
-mysql_secure_installation <<EOF
-n
-y
-N
-y
-y
+# Non-interactive configuration of MariaDB (security)
+log "Securing MariaDB..."
+ROOT_PASS="eD19m89Rbo!"
+
+sudo mariadb <<EOF
+-- Remove anonymous users
+DELETE FROM mysql.user WHERE User='';
+-- Drop the test database
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test_%';
+-- Set the root password and change the authentication method to mysql_native_password
+ALTER USER 'root'@'localhost' IDENTIFIED VIA mysql_native_password USING PASSWORD('${ROOT_PASS}');
+FLUSH PRIVILEGES;
 EOF
 
-# Create a database and user for MediaWiki
+log "MariaDB has been secured."
+
+# Creating the MediaWiki database and user
+log "Creating the MediaWiki database and user..."
 DB_NAME="mediawiki"
 DB_USER="mediawiki_user"
 DB_PASS=$(openssl rand -base64 12)
 
-# Log into MariaDB and execute commands to create the database and user
-sudo mariadb -e "CREATE DATABASE ${DB_NAME};"
-sudo mariadb -e "CREATE USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';"
-sudo mariadb -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
-sudo mariadb -e "FLUSH PRIVILEGES;"
+sudo mariadb -uroot -p"${ROOT_PASS}" <<EOF
+CREATE DATABASE ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';
+FLUSH PRIVILEGES;
+EOF
 
-# Download and install MediaWiki
+log "Database '${DB_NAME}' and user '${DB_USER}' created successfully."
+log "MediaWiki user password generated: ${DB_PASS}"
+
+# Installing PHP 8.1 and required extensions
+log "Installing PHP 8.1 and required extensions..."
+sudo apt install -y php8.1 php8.1-cli php8.1-common php8.1-mysql php8.1-xml php8.1-mbstring php8.1-intl php8.1-curl php8.1-zip libapache2-mod-php8.1
+
+# Verify that Apache is active
+check_service "apache2"
+
+# Downloading and installing MediaWiki
 MEDIAWIKI_VERSION="1.39.3"
-MEDIAWIKI_URL="https://releases.wikimedia.org/mediawiki/${MEDIAWIKI_VERSION%.*}/mediawiki-${MEDIAWIKI_VERSION}.tar.gz"
-
-# Download MediaWiki tarball
+log "Downloading MediaWiki version ${MEDIAWIKI_VERSION}..."
 cd /tmp
-wget ${MEDIAWIKI_URL}
+wget -q https://releases.wikimedia.org/mediawiki/${MEDIAWIKI_VERSION%.*}/mediawiki-${MEDIAWIKI_VERSION}.tar.gz
 
-# Extract the tarball and move it to the web directory
-tar -xvzf mediawiki-${MEDIAWIKI_VERSION}.tar.gz
+if [ ! -f mediawiki-${MEDIAWIKI_VERSION}.tar.gz ]; then
+  log "MediaWiki tarball download failed. Exiting."
+  exit 1
+fi
+
+tar -xzf mediawiki-${MEDIAWIKI_VERSION}.tar.gz
 sudo mv mediawiki-${MEDIAWIKI_VERSION} /var/www/html/mediawiki
+log "MediaWiki has been extracted and moved to /var/www/html/mediawiki."
 
-# Set proper permissions for the MediaWiki directory
+# Setting correct permissions
 sudo chown -R www-data:www-data /var/www/html/mediawiki
 sudo chmod -R 755 /var/www/html/mediawiki
 
-# Configure Apache for MediaWiki
+# Configuring Apache for MediaWiki
+log "Configuring Apache for MediaWiki..."
 sudo tee /etc/apache2/sites-available/mediawiki.conf > /dev/null <<EOL
 <VirtualHost *:80>
     ServerName wiki.localhost
@@ -73,50 +116,50 @@ sudo tee /etc/apache2/sites-available/mediawiki.conf > /dev/null <<EOL
 </VirtualHost>
 EOL
 
-# Enable the MediaWiki site and disable the default Apache site
 sudo a2ensite mediawiki.conf
 sudo a2dissite 000-default.conf
-
-# Enable Apache's rewrite module for clean URLs
 sudo a2enmod rewrite
+sudo systemctl reload apache2
 
-# Configure PHP settings for MediaWiki
+# Configuring PHP settings for MediaWiki
+log "Configuring PHP settings for MediaWiki..."
 sudo tee -a /etc/php/8.1/apache2/php.ini > /dev/null <<EOL
 
-; MediaWiki recommended settings
+; Recommended settings for MediaWiki
 upload_max_filesize = 20M
 post_max_size = 20M
 memory_limit = 128M
 max_execution_time = 200
 EOL
 
-# Restart Apache to apply all changes
-sudo systemctl restart apache2
+sudo systemctl reload apache2
 
-# Add entry to hosts file
+# Adding an entry for "wiki.localhost" in /etc/hosts
+log "Updating /etc/hosts for wiki.localhost..."
 sudo sed -i '/wiki.localhost/d' /etc/hosts
 echo "127.0.0.1 wiki.localhost" | sudo tee -a /etc/hosts
 
-# Create a backup directory
+# Creating a backup directory for MediaWiki
+log "Creating backup directory in MediaWiki..."
 sudo mkdir -p /var/www/html/mediawiki/backups
 sudo chown -R www-data:www-data /var/www/html/mediawiki/backups
 
-# Display final instructions
+# Final message
+log "MediaWiki installation completed!"
 echo "============================================"
 echo "MediaWiki Installation Complete!"
-echo "============================================"
-echo "Access your wiki at: http://your_server_ip"
+echo "Access your wiki at: http://wiki.localhost"
 echo ""
 echo "Database Information:"
-echo "Database Name: ${DB_NAME}"
-echo "Database User: ${DB_USER}"
-echo "Database Password: ${DB_PASS}"
+echo "  Database Name: ${DB_NAME}"
+echo "  Database User: ${DB_USER}"
+echo "  Database Password: ${DB_PASS}"
 echo ""
-echo "Important Next Steps:"
-echo "1. Visit http://wiki.localhost in your browser"
-echo "2. Follow the MediaWiki setup wizard"
-echo "3. Use the database credentials above during setup"
-echo "4. Save the LocalSettings.php file to /var/www/html/mediawiki/"
+echo "MariaDB root password (if set): ${ROOT_PASS}"
 echo ""
-echo "Save these credentials in a secure location!"
+echo "Next Steps:"
+echo "  1. Visit http://wiki.localhost in your browser"
+echo "  2. Follow the MediaWiki setup wizard"
+echo "  3. Enter the database credentials when prompted"
+echo "  4. Save the LocalSettings.php file in /var/www/html/mediawiki/"
 echo "============================================"
