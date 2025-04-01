@@ -1,5 +1,15 @@
 # MediaWiki Automated Installation Script
 
+![Status](https://img.shields.io/badge/status-stable-brightgreen)
+![Last Commit](https://img.shields.io/github/last-commit/eugeniogiusti/automated-mediawiki-deploy)
+![License](https://img.shields.io/github/license/eugeniogiusti/automated-mediawiki-deploy)
+![Top Language](https://img.shields.io/github/languages/top/eugeniogiusti/automated-mediawiki-deploy)
+![Stars](https://img.shields.io/github/stars/eugeniogiusti/automated-mediawiki-deploy?style=social)
+![Platform](https://img.shields.io/badge/platform-Ubuntu-blue)
+![Tool](https://img.shields.io/badge/tool-MediaWiki-lightgrey)
+![Shell Script](https://img.shields.io/badge/made%20with-bash-1f425f.svg)
+
+
 This bash script automates the installation and initial configuration of MediaWiki on Ubuntu 22.04 LTS with Apache, MariaDB, and PHP 8.1.
 
 ## Features
