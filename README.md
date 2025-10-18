@@ -1,5 +1,8 @@
 # MediaWiki Automated Installation Script
 
+<img width="1200" height="720" alt="mediawiki_1606708641_1" src="https://github.com/user-attachments/assets/b1f9820f-c238-4445-ad50-9285ca5ddec9" />
+
+
 ![Status](https://img.shields.io/badge/status-stable-brightgreen)
 ![Last Commit](https://img.shields.io/github/last-commit/eugeniogiusti/automated-mediawiki-deploy)
 ![License](https://img.shields.io/github/license/eugeniogiusti/automated-mediawiki-deploy)
